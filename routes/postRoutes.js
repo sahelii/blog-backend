@@ -7,7 +7,7 @@ const {
   createPost,
   updatePost,
   deletePost,
-  getMyBlogs,  
+  //getMyBlogs,  
   
 } = require('../controllers/postController');
 
@@ -16,7 +16,7 @@ router.get('/:id', getPost);
 router.post('/', tokenVerifyMiddleware, createPost);
 router.put('/:id', tokenVerifyMiddleware, updatePost);
 router.delete('/:id', tokenVerifyMiddleware, deletePost);
-router.get('/my-blogs', tokenVerifyMiddleware, getMyBlogs);
+//router.get('/my-blogs', tokenVerifyMiddleware, getMyBlogs);
 
 module.exports = router;
 

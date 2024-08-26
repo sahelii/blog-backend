@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 exports.register = async (req, res) => {
-  const { email, password, firebase_uid } = req.body;
+  const { name, email, password, firebase_uid } = req.body;
 
   try {
     let user = await User.findOne({ email });
@@ -13,7 +13,7 @@ exports.register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashed_password = await bcrypt.hash(password, salt);
 
-    const new_user = new User({ email, "password":hashed_password, firebase_uid });
+    const new_user = new User({ name,email, "password":hashed_password, firebase_uid });
     await new_user.save();
     delete(new_user.password)
     res.status(201).json(new_user);

@@ -12,6 +12,17 @@ exports.getPosts = async (req, res) => {
   }
 };
 
+exports.getPostsByUserId= async (req, res) => {
+  try {
+    const userId= await User.findOne({"firebase_uid":req.uid});
+    const posts = await Post.find({author:userId}).populate('author').populate('comments');
+    res.json(posts);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
 exports.getPost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate('author').populate('comments');
@@ -25,12 +36,15 @@ exports.getPost = async (req, res) => {
   }
 };
 
+
+
 exports.createPost = async (req, res) => {
-  const { title, content } = req.body;
+
+  const { title, content, fileType } = req.body;
 
   try {
     const userId= await User.findOne({"firebase_uid":req.uid});
-    const newPost = new Post({ title, content, author: userId });
+    const newPost = new Post({ title, content, author: userId , image: req.file ? req.file.buffer : null,imageType:req.file?fileType:null});
     const post = await newPost.save();
     res.json(post);
   } catch (err) {

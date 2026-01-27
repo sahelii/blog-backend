@@ -1,41 +1,94 @@
 const express = require('express');
+const compression = require('compression');
 const connectDB = require('./config/db');
+const config = require('./config/config');
+const logger = require('./utils/logger');
+const errorHandler = require('./middleware/errorHandler');
+
+// Import security middleware
+const { 
+  helmet, 
+  limiter, 
+  authLimiter, 
+  mongoSanitize, 
+  xss, 
+  hpp 
+} = require('./middleware/security');
+
+// Import routes
 const authRoutes = require('./routes/authRoutes');
 const postRoutes = require('./routes/postRoutes');
 const commentRoutes = require('./routes/commentRoutes');
-const admin= require("firebase-admin")
 
-const cors= require("cors")
-var serviceAccount = require("./blog-app-150fc-firebase-adminsdk-q4n0z-3fff830f3f.json");
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
-
-require('dotenv').config();
-
+// Initialize Express app
 const app = express();
 
 // Connect Database
 connectDB();
 
+// Security Middleware (apply before other middleware)
+app.use(helmet);
+app.use(compression());
+app.use(mongoSanitize());
+app.use(xss());
+app.use(hpp());
 
-app.use(cors())
-// Init Middleware
-app.use(express.json({ extended: false }));
+// Body parser middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Define Routes
+// CORS configuration
+const cors = require('cors');
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
+
+// Rate limiting
+app.use('/api/', limiter);
+app.use('/api/auth/', authLimiter);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/posts',postRoutes);
+app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
 
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Something broke!');
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Route not found'
   });
-  
+});
 
-const PORT = process.env.PORT || 5000;
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+const PORT = config.port || 5000;
+
+const server = app.listen(PORT, () => {
+  logger.info(`Server started on port ${PORT} in ${config.nodeEnv} mode`);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  logger.error('Unhandled Promise Rejection:', err);
+  server.close(() => {
+    process.exit(1);
+  });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception:', err);
+  process.exit(1);
+});

@@ -1,3 +1,30 @@
-blog-app-150fc-firebase-adminsdk-q4n0z-3fff830f3f.json
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
 .env
-node_modules
+.env.local
+.env.production
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Firebase service account (should use env vars instead)
+*-firebase-adminsdk-*.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build
+dist/
+build/

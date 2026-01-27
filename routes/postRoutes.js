@@ -1,29 +1,52 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const tokenVerifyMiddleware=require('../middleware/verifyTokenMiddleware')
+const tokenVerifyMiddleware = require('../middleware/verifyTokenMiddleware');
+const { authorize } = require('../middleware/authorize');
+const { validatePost, validatePostUpdate } = require('../validators/postValidator');
+const upload = require('../utils/uploadImage');
+const paginate = require('../middleware/pagination');
+const Post = require('../models/Post');
 const {
   getPosts,
   getPost,
   createPost,
   updatePost,
   deletePost,
-  getPostsByUserId,  
-  
+  getPostsByUserId,
 } = require('../controllers/postController');
 
-
-
-const upload = multer();
-
-
+// Get user's own posts (protected)
 router.get('/my-blogs', tokenVerifyMiddleware, getPostsByUserId);
 
-router.get('/', getPosts);
+// Get all posts with pagination (public)
+router.get('/', paginate(Post, [
+  { path: 'author', select: 'name email avatar' },
+  { path: 'comments', populate: { path: 'user', select: 'name email avatar' } }
+]), getPosts);
+
+// Get single post (public)
 router.get('/:id', getPost);
-router.post('/', [tokenVerifyMiddleware,upload.single('image')], createPost);
-router.put('/:id', tokenVerifyMiddleware, updatePost);
-router.delete('/:id', tokenVerifyMiddleware, deletePost);
+
+// Create post (protected, requires validation)
+router.post(
+  '/',
+  tokenVerifyMiddleware,
+  upload.single('image'),
+  validatePost,
+  createPost
+);
+
+// Update post (protected, requires authorization and validation)
+router.put(
+  '/:id',
+  tokenVerifyMiddleware,
+  authorize,
+  upload.single('image'),
+  validatePostUpdate,
+  updatePost
+);
+
+// Delete post (protected, requires authorization)
+router.delete('/:id', tokenVerifyMiddleware, authorize, deletePost);
 
 module.exports = router;
-

@@ -1,6 +1,7 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
 const { successResponse, errorResponse } = require('../middleware/responseFormatter');
+const { invalidateCache } = require('../middleware/cache');
 const logger = require('../utils/logger');
 
 exports.getPosts = async (req, res, next) => {
@@ -114,6 +115,11 @@ exports.createPost = async (req, res, next) => {
     // Populate author before returning
     await post.populate('author', 'name email avatar');
 
+    // Invalidate cache when new post is created
+    // This ensures users see the new post immediately
+    await invalidateCache('cache:/api/posts*'); // Invalidate all post list caches
+    await invalidateCache(`cache:/api/posts/${post._id}`); // Invalidate this post's cache
+
     successResponse(res, 201, post, 'Post created successfully');
   } catch (err) {
     logger.error('Error in createPost:', err);
@@ -154,6 +160,10 @@ exports.updatePost = async (req, res, next) => {
       return errorResponse(res, 404, 'Post not found');
     }
 
+    // Invalidate cache when post is updated
+    await invalidateCache('cache:/api/posts*'); // Invalidate all post list caches
+    await invalidateCache(`cache:/api/posts/${post._id}`); // Invalidate this post's cache
+
     successResponse(res, 200, post, 'Post updated successfully');
   } catch (err) {
     logger.error('Error in updatePost:', err);
@@ -171,6 +181,10 @@ exports.deletePost = async (req, res, next) => {
 
     // Use deleteOne instead of deprecated remove()
     await Post.deleteOne({ _id: post._id });
+
+    // Invalidate cache when post is deleted
+    await invalidateCache('cache:/api/posts*'); // Invalidate all post list caches
+    await invalidateCache(`cache:/api/posts/${post._id}`); // Invalidate this post's cache
 
     successResponse(res, 200, null, 'Post deleted successfully');
   } catch (err) {

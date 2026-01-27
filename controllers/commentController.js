@@ -2,6 +2,7 @@ const Comment = require('../models/Comment');
 const Post = require('../models/Post');
 const User = require('../models/User');
 const { successResponse, errorResponse } = require('../middleware/responseFormatter');
+const { invalidateCache } = require('../middleware/cache');
 const logger = require('../utils/logger');
 
 exports.createComment = async (req, res, next) => {
@@ -34,6 +35,11 @@ exports.createComment = async (req, res, next) => {
 
     // Populate user before returning
     await savedComment.populate('user', 'name email avatar');
+
+    // Invalidate cache when comment is added
+    // Post detail page cache needs to be invalidated to show new comment
+    await invalidateCache(`cache:/api/posts/${req.params.id}`);
+    await invalidateCache(`cache:/api/comments/${req.params.id}/comment`);
 
     successResponse(res, 201, savedComment, 'Comment created successfully');
   } catch (err) {
@@ -85,6 +91,10 @@ exports.deleteComment = async (req, res, next) => {
     );
 
     await Comment.deleteOne({ _id: comment._id });
+
+    // Invalidate cache when comment is deleted
+    await invalidateCache(`cache:/api/posts/${comment.post}`);
+    await invalidateCache(`cache:/api/comments/${comment.post}/comment`);
 
     successResponse(res, 200, null, 'Comment deleted successfully');
   } catch (err) {

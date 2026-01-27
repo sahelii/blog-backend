@@ -3,6 +3,7 @@ const router = express.Router();
 const tokenVerifyMiddleware = require('../middleware/verifyTokenMiddleware');
 const { authorize } = require('../middleware/authorize');
 const { validatePost, validatePostUpdate } = require('../validators/postValidator');
+const { cache } = require('../middleware/cache');
 const upload = require('../utils/uploadImage');
 const paginate = require('../middleware/pagination');
 const Post = require('../models/Post');
@@ -19,13 +20,15 @@ const {
 router.get('/my-blogs', tokenVerifyMiddleware, getPostsByUserId);
 
 // Get all posts with pagination (public)
-router.get('/', paginate(Post, [
+// Cache for 5 minutes (300 seconds) - frequently accessed, doesn't change often
+router.get('/', cache(300), paginate(Post, [
   { path: 'author', select: 'name email avatar' },
   { path: 'comments', populate: { path: 'user', select: 'name email avatar' } }
 ]), getPosts);
 
 // Get single post (public)
-router.get('/:id', getPost);
+// Cache for 10 minutes (600 seconds) - individual posts change less frequently
+router.get('/:id', cache(600), getPost);
 
 // Create post (protected, requires validation)
 router.post(

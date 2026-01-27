@@ -5,6 +5,9 @@ const config = require('./config/config');
 const logger = require('./utils/logger');
 const errorHandler = require('./middleware/errorHandler');
 
+// Initialize Redis (connects in background, app works without it)
+require('./config/redis');
+
 // Import security middleware
 const { 
   helmet, 

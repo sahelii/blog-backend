@@ -34,11 +34,18 @@ app.use(helmet);
 app.use(compression());
 app.use(mongoSanitize());
 app.use(xss());
-app.use(hpp());
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// HPP should be after body parsers to protect against parameter pollution
+// Initialize hpp middleware here after Express app is set up
+try {
+  app.use(hpp());
+} catch (error) {
+  logger.warn('HPP middleware failed to initialize, continuing without it:', error.message);
+}
 
 // CORS configuration
 const cors = require('cors');

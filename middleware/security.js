@@ -43,5 +43,6 @@ module.exports = {
   }),
   mongoSanitize,
   xss,
-  hpp: hpp(),
+  // Export hpp function to be called after Express app is initialized
+  hpp,
 };

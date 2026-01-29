@@ -22,10 +22,22 @@ const redis = require('redis');
 const logger = require('../utils/logger');
 const config = require('./config');
 
+let hasLoggedError = false; // Track if we've already logged an error
+
 // Create Redis client
 // Redis can run locally or on cloud (Redis Cloud, AWS ElastiCache, etc.)
 const redisClient = redis.createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379',
+  socket: {
+    reconnectStrategy: (retries) => {
+      // Only retry 3 times, then give up silently
+      if (retries > 3) {
+        return false; // Stop retrying
+      }
+      return Math.min(retries * 100, 3000); // Exponential backoff
+    },
+    connectTimeout: 5000,
+  },
   // Optional: Add password if Redis is password-protected
   // password: process.env.REDIS_PASSWORD
 });
@@ -33,19 +45,27 @@ const redisClient = redis.createClient({
 // Handle connection events
 redisClient.on('connect', () => {
   logger.info('Redis client connecting...');
+  hasLoggedError = false; // Reset on successful connection attempt
 });
 
 redisClient.on('ready', () => {
   logger.info('✅ Redis client connected and ready');
+  hasLoggedError = false;
 });
 
 redisClient.on('error', (err) => {
-  logger.error('❌ Redis client error:', err);
+  // Only log the first error to reduce log noise
+  if (!hasLoggedError) {
+    logger.warn('⚠️  Redis not available. App will work without caching. To enable Redis, start a Redis server.');
+    hasLoggedError = true;
+  }
   // Don't exit - app can work without Redis (graceful degradation)
 });
 
 redisClient.on('end', () => {
-  logger.warn('Redis client connection ended');
+  if (!hasLoggedError) {
+    logger.warn('Redis client connection ended');
+  }
 });
 
 // Connect to Redis
@@ -54,9 +74,13 @@ redisClient.on('end', () => {
 (async () => {
   try {
     await redisClient.connect();
-    logger.info('Redis connected successfully');
+    logger.info('✅ Redis connected successfully');
   } catch (err) {
-    logger.warn('Redis connection failed. App will work without caching:', err.message);
+    // Only log once
+    if (!hasLoggedError) {
+      logger.warn('⚠️  Redis connection failed. App will work without caching.');
+      hasLoggedError = true;
+    }
     // App continues without Redis - graceful degradation
   }
 })();

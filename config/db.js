@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const config = require('./config');
 const logger = require('../utils/logger');
 
+// Suppress Mongoose deprecation warning for strictQuery
+mongoose.set('strictQuery', true);
+
 const connectDB = async () => {
   try {
     const mongoUri = config.mongoUri;

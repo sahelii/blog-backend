@@ -23,7 +23,12 @@ Copy code
 npm install
 Set up environment variables:
 
-Create a .env file in the root directory with the following:
+Copy `.env.example` to `.env` and fill in the values. For production (e.g. Render), set **CORS** so the frontend can call the API:
+
+- `CORS_ALLOWED_ORIGINS=https://blog-frontend-sigma-ecru.vercel.app` (comma-separated for multiple origins), or
+- `FRONTEND_URL=https://blog-frontend-sigma-ecru.vercel.app`
+
+Example minimal .env for local development:
 
 makefile
 Copy code

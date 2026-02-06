@@ -1,9 +1,39 @@
 require('dotenv').config();
 
+const DEV_ORIGINS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+];
+
+/**
+ * Build allowed CORS origins from env (industry practice: config-driven, no hardcoded prod URLs).
+ * - CORS_ALLOWED_ORIGINS: comma-separated list (e.g. https://app.example.com,https://staging.example.com)
+ * - FRONTEND_URL: single origin (legacy); added if set
+ * - In development, localhost origins are added automatically if not already present.
+ */
+function getAllowedOrigins() {
+  const fromEnv = (process.env.CORS_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const fromFrontendUrl = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.trim()] : [];
+  const combined = [...new Set([...fromEnv, ...fromFrontendUrl])];
+  const isDev = process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test';
+  if (isDev) {
+    DEV_ORIGINS.forEach((o) => {
+      if (!combined.includes(o)) combined.push(o);
+    });
+  }
+  return combined;
+}
+
 module.exports = {
   port: process.env.PORT || 5000,
   mongoUri: process.env.MONGO_URI || process.env.MONGODB_URI,
   nodeEnv: process.env.NODE_ENV || 'development',
+  cors: {
+    allowedOrigins: getAllowedOrigins(),
+  },
   firebase: {
     type: process.env.FIREBASE_TYPE,
     projectId: process.env.FIREBASE_PROJECT_ID,

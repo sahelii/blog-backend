@@ -19,10 +19,15 @@ function getAllowedOrigins() {
   const fromFrontendUrl = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.trim()] : [];
   const combined = [...new Set([...fromEnv, ...fromFrontendUrl])];
   const isDev = process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test';
+  const isProduction = process.env.NODE_ENV === 'production';
   if (isDev) {
     DEV_ORIGINS.forEach((o) => {
       if (!combined.includes(o)) combined.push(o);
     });
+  }
+  // Fallback so production works if env was not set on host (e.g. Render)
+  if (isProduction && combined.length === 0) {
+    combined.push('https://blog-frontend-sigma-ecru.vercel.app');
   }
   return combined;
 }

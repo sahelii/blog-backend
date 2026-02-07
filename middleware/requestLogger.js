@@ -1,16 +1,16 @@
+const crypto = require('crypto');
 const logger = require('../utils/logger');
-const { v4: uuidv4 } = require('uuid');
 
 /**
  * Request Logger Middleware
- * 
+ *
  * Logs all incoming requests with:
  * - Unique request ID for tracing
  * - Request method, URL, IP
  * - Response status code
  * - Response time
  * - User ID (if authenticated)
- * 
+ *
  * This helps with:
  * - Debugging production issues
  * - Performance monitoring
@@ -19,8 +19,7 @@ const { v4: uuidv4 } = require('uuid');
  */
 
 const requestLogger = (req, res, next) => {
-  // Generate unique request ID
-  const requestId = uuidv4();
+  const requestId = crypto.randomUUID();
   req.requestId = requestId;
 
   // Start time for response time calculation

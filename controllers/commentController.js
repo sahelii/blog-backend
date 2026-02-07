@@ -1,6 +1,5 @@
 const Comment = require('../models/Comment');
 const Post = require('../models/Post');
-const User = require('../models/User');
 const { successResponse, errorResponse } = require('../middleware/responseFormatter');
 const { invalidateCache } = require('../middleware/cache');
 const logger = require('../utils/logger');
@@ -8,11 +7,6 @@ const logger = require('../utils/logger');
 exports.createComment = async (req, res, next) => {
   try {
     const { comment } = req.body;
-    const user = await User.findOne({ firebase_uid: req.uid });
-
-    if (!user) {
-      return errorResponse(res, 404, 'User not found');
-    }
 
     const post = await Post.findById(req.params.id);
     if (!post) {
@@ -20,7 +14,7 @@ exports.createComment = async (req, res, next) => {
     }
 
     const newComment = new Comment({
-      user: user._id,
+      user: req.user._id,
       comment,
       post: req.params.id,
     });
@@ -74,13 +68,7 @@ exports.deleteComment = async (req, res, next) => {
       return errorResponse(res, 404, 'Comment not found');
     }
 
-    const user = await User.findOne({ firebase_uid: req.uid });
-    if (!user) {
-      return errorResponse(res, 404, 'User not found');
-    }
-
-    // Check if user owns the comment
-    if (comment.user.toString() !== user._id.toString()) {
+    if (comment.user.toString() !== req.user._id.toString()) {
       return errorResponse(res, 403, 'Not authorized to delete this comment');
     }
 

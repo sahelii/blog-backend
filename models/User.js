@@ -21,8 +21,8 @@ const UserSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
-    select: false, // Don't return password by default
+    required: false, // Optional for Firebase-only users (synced on first request)
+    select: false,
   },
   avatar: {
     type: String,

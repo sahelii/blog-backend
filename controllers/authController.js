@@ -51,14 +51,7 @@ exports.register = async (req, res, next) => {
 
 exports.getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findOne({ firebase_uid: req.uid })
-      .select('-password');
-
-    if (!user) {
-      return errorResponse(res, 404, 'User not found');
-    }
-
-    successResponse(res, 200, user, 'User profile retrieved successfully');
+    successResponse(res, 200, req.user, 'User profile retrieved successfully');
   } catch (err) {
     logger.error('Error in getUserProfile:', err);
     next(err);
@@ -74,15 +67,11 @@ exports.updateUserProfile = async (req, res, next) => {
     if (bio !== undefined) updateData.bio = bio.trim();
     if (avatar) updateData.avatar = avatar;
 
-    const user = await User.findOneAndUpdate(
-      { firebase_uid: req.uid },
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
       { $set: updateData },
       { new: true, runValidators: true }
     ).select('-password');
-
-    if (!user) {
-      return errorResponse(res, 404, 'User not found');
-    }
 
     successResponse(res, 200, user, 'Profile updated successfully');
   } catch (err) {

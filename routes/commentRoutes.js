@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const tokenVerifyMiddleware = require('../middleware/verifyTokenMiddleware');
+const ensureBackendUser = require('../middleware/ensureBackendUser');
 const { validateComment } = require('../validators/postValidator');
 const { cache } = require('../middleware/cache');
 const { 
@@ -138,6 +139,6 @@ router.get('/:id/comment', cache(120), getCommentsByPostId);
  *       404:
  *         description: Comment not found
  */
-router.delete('/:id/comment/:commentId', tokenVerifyMiddleware, deleteComment);
+router.delete('/:id/comment/:commentId', tokenVerifyMiddleware, ensureBackendUser, deleteComment);
 
 module.exports = router;

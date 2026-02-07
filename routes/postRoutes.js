@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const tokenVerifyMiddleware = require('../middleware/verifyTokenMiddleware');
+const ensureBackendUser = require('../middleware/ensureBackendUser');
 const { authorize } = require('../middleware/authorize');
 const { validatePost, validatePostUpdate } = require('../validators/postValidator');
 const { cache } = require('../middleware/cache');
@@ -46,7 +47,7 @@ const {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/my-blogs', tokenVerifyMiddleware, getPostsByUserId);
+router.get('/my-blogs', tokenVerifyMiddleware, ensureBackendUser, getPostsByUserId);
 
 /**
  * @swagger
@@ -187,6 +188,7 @@ router.get('/:id', cache(600), getPost);
 router.post(
   '/',
   tokenVerifyMiddleware,
+  ensureBackendUser,
   upload.single('image'),
   validatePost,
   createPost
@@ -254,6 +256,7 @@ router.post(
 router.put(
   '/:id',
   tokenVerifyMiddleware,
+  ensureBackendUser,
   authorize,
   upload.single('image'),
   validatePostUpdate,
@@ -290,6 +293,6 @@ router.put(
  *       404:
  *         description: Post not found
  */
-router.delete('/:id', tokenVerifyMiddleware, authorize, deletePost);
+router.delete('/:id', tokenVerifyMiddleware, ensureBackendUser, authorize, deletePost);
 
 module.exports = router;

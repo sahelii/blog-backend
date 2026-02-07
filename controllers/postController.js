@@ -1,5 +1,4 @@
 const Post = require('../models/Post');
-const User = require('../models/User');
 const { successResponse, errorResponse } = require('../middleware/responseFormatter');
 const { invalidateCache } = require('../middleware/cache');
 const logger = require('../utils/logger');
@@ -30,12 +29,7 @@ exports.getPosts = async (req, res, next) => {
 
 exports.getPostsByUserId = async (req, res, next) => {
   try {
-    const user = await User.findOne({ firebase_uid: req.uid });
-    if (!user) {
-      return errorResponse(res, 404, 'User not found');
-    }
-
-    const posts = await Post.find({ author: user._id })
+    const posts = await Post.find({ author: req.user._id })
       .populate('author', 'name email avatar')
       .populate({
         path: 'comments',
@@ -74,11 +68,6 @@ exports.getPost = async (req, res, next) => {
 exports.createPost = async (req, res, next) => {
   try {
     const { title, content, tags } = req.body;
-    const user = await User.findOne({ firebase_uid: req.uid });
-
-    if (!user) {
-      return errorResponse(res, 404, 'User not found');
-    }
 
     // Handle image - if using Cloudinary, req.file.path will be the URL
     // If using memory storage, req.file.buffer will be the buffer
@@ -100,7 +89,7 @@ exports.createPost = async (req, res, next) => {
     const postData = {
       title,
       content,
-      author: user._id,
+      author: req.user._id,
       image: imageUrl,
       imageType: imageType
     };

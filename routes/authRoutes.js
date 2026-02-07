@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const tokenVerifyMiddleware = require('../middleware/verifyTokenMiddleware');
+const ensureBackendUser = require('../middleware/ensureBackendUser');
 const { register, getUserProfile, updateUserProfile } = require('../controllers/authController');
 
 /**
@@ -91,7 +92,7 @@ router.post('/register', register);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/profile', tokenVerifyMiddleware, getUserProfile);
+router.get('/profile', tokenVerifyMiddleware, ensureBackendUser, getUserProfile);
 
 /**
  * @swagger
@@ -145,6 +146,6 @@ router.get('/profile', tokenVerifyMiddleware, getUserProfile);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/profile', tokenVerifyMiddleware, updateUserProfile);
+router.put('/profile', tokenVerifyMiddleware, ensureBackendUser, updateUserProfile);
 
 module.exports = router;

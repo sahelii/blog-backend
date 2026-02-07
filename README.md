@@ -1,49 +1,56 @@
-This is the backend for BlogApp, a platform where users can create, edit, and manage blog posts. Built with Node.js, Express.js, and MongoDB.
+# StoryHub Backend
 
-Features:
-User authentication (signup, login, logout)
-CRUD operations for blog posts
-Commenting system
-Firebase authentication
-Technologies Used
-Node.js, Express.js
-MongoDB, Mongoose
-Firebase
-Installation and Setup
-Clone the repository:
+Node.js + Express API for the blog platform: posts, comments, auth (Firebase), Redis caching, Swagger docs.
 
-bash
-Copy code
-git clone https://github.com/sahelii/blogapp-backend.git
-cd blogapp-backend
-Install dependencies:
+## Tech stack
 
-bash
-Copy code
-npm install
-Set up environment variables:
+- **Runtime:** Node.js 20
+- **Framework:** Express
+- **DB:** MongoDB (Mongoose)
+- **Auth:** Firebase Admin (verify ID token); users synced to MongoDB on first request
+- **Cache:** Redis (optional; app works without it)
+- **Docs:** Swagger at `/api-docs`
 
-Copy `.env.example` to `.env` and fill in the values. For production (e.g. Render), set **CORS** so the frontend can call the API:
+## Setup
 
-- `CORS_ALLOWED_ORIGINS=https://blog-frontend-sigma-ecru.vercel.app` (comma-separated for multiple origins), or
-- `FRONTEND_URL=https://blog-frontend-sigma-ecru.vercel.app`
+1. **Env**
+   - Copy `.env.example` to `.env`.
+   - Set `MONGO_URI` or `MONGODB_URI`, `JWT_SECRET`, and Firebase Admin vars (see `.env.example`).
+   - Production CORS: `CORS_ALLOWED_ORIGINS=https://your-frontend-origin` or `FRONTEND_URL=...`
+   - Optional: `REDIS_URL` (default `redis://localhost:6379`).
 
-Example minimal .env for local development:
+2. **Run**
+   - Local: `npm install && npm start` (or `npm run dev`).
+   - With Docker: `docker-compose up` (MongoDB + Redis + backend).
 
-makefile
-Copy code
-PORT=5000
-MONGODB_URI=your_mongodb_uri
+## API
 
-Run the application:
+- **Base:** `http://localhost:5000` (or your deploy URL)
+- **Docs:** `GET /api-docs`
+- **Health:** `GET /health` (includes `db`, `redis` status)
+- **Metrics:** `GET /metrics` (request count, cache hits/misses, uptime)
+- **Auth:** Send Firebase ID token in header `x-auth-token`
 
-bash
-Copy code
-npm start
-Deployment
-The backend is deployed and can be accessed at:
-https://blog-backend-2-5hun.onrender.com
- 
-BlogApp Frontend
-https://blog-frontend-sigma-ecru.vercel.app/
-You can interact with the API using this base URL.
+## CI / tests
+
+- **Workflow:** `.github/workflows/ci.yml` runs on push/PR to `main` and `develop`.
+- **Steps:** `npm ci`, `npm run lint`, `npm test` (Jest + Supertest with MongoDB and Redis services).
+- **Tests:** Auth is mocked; use `x-auth-token` and optionally `x-test-uid` for non-owner tests.
+
+So: *Every push runs tests and lint; no manual-only testing.*
+
+## Design decisions
+
+| Decision | Reason |
+|----------|--------|
+| **Firebase + Node** | Firebase for auth; Node for blog data and ownership. Backend verifies token and syncs user to MongoDB. |
+| **Atlas vs local Mongo** | Same code; use Atlas in production, local (or MongoMemoryServer in tests) for dev/CI. |
+| **Redis** | Cache GETs for posts; TTL + invalidation on write. Optional: graceful degradation if Redis is down. |
+| **Security** | Helmet, CORS allowlist, rate limiting, mongo-sanitize, xss-clean, HPP. |
+
+## Deploy
+
+- **Live API:** https://blog-backend-2-5hun.onrender.com  
+- **Frontend:** https://blog-frontend-sigma-ecru.vercel.app  
+
+See `docs/IMPLEMENTATION_AUDIT.md` for a full checklist of what’s implemented.

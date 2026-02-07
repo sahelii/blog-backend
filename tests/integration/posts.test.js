@@ -1,13 +1,26 @@
 /**
  * Integration Tests for Posts API
- * 
+ *
  * Tests the complete flow of post operations:
- * - Creating posts
- * - Reading posts
- * - Updating posts
- * - Deleting posts
- * - Authorization checks
+ * - Creating posts with/without auth
+ * - Validation errors (short title, missing content)
+ * - Reading posts (list, single, 404)
+ * - Updating/deleting (owner); unauthorized by non-owner not yet covered
+ *
+ * Auth is mocked so no Firebase is required (req.uid + req.user set in test env).
  */
+
+jest.mock('../../middleware/verifyTokenMiddleware', () => (req, res, next) => {
+  req.uid = req.header('x-test-uid') || 'test-firebase-uid-123';
+  next();
+});
+
+jest.mock('../../middleware/ensureBackendUser', () => async (req, res, next) => {
+  const User = require('../../models/User');
+  const u = await User.findOne({ firebase_uid: req.uid });
+  if (u) req.user = u;
+  next();
+});
 
 const request = require('supertest');
 const app = require('../../app');
@@ -20,18 +33,12 @@ describe('Posts API Integration Tests', () => {
   let testPostId;
 
   beforeAll(async () => {
-    // Create test user and get auth token
-    // This would typically involve Firebase Admin SDK for testing
-    // For now, we'll mock this
     testUser = await User.create({
       name: 'Test User',
       email: 'test@example.com',
       password: 'hashedpassword',
       firebase_uid: 'test-firebase-uid-123',
     });
-
-    // In a real scenario, you'd get a token from Firebase
-    // For testing, you might need to mock the token verification middleware
     authToken = 'mock-auth-token';
   });
 
@@ -45,7 +52,7 @@ describe('Posts API Integration Tests', () => {
 
       const response = await request(app)
         .post('/api/posts')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-auth-token', authToken)
         .send(postData)
         .expect(201);
 
@@ -67,7 +74,7 @@ describe('Posts API Integration Tests', () => {
     it('should reject post with invalid data', async () => {
       const response = await request(app)
         .post('/api/posts')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-auth-token', authToken)
         .send({ title: 'AB', content: 'Short' }) // Too short
         .expect(400);
 
@@ -128,6 +135,29 @@ describe('Posts API Integration Tests', () => {
   });
 
   describe('PUT /api/posts/:id', () => {
+    it('should return 403 when non-owner tries to update', async () => {
+      const otherUser = await User.create({
+        name: 'Other User',
+        email: 'other@example.com',
+        password: 'hashed',
+        firebase_uid: 'other-firebase-uid-456',
+      });
+      const postByTestUser = await Post.create({
+        title: 'Post by Test User',
+        content: 'Only test user can update this post content.',
+        author: testUser._id,
+      });
+      const response = await request(app)
+        .put(`/api/posts/${postByTestUser._id}`)
+        .set('x-auth-token', authToken)
+        .set('x-test-uid', otherUser.firebase_uid)
+        .send({ title: 'Hacked', content: 'Should not be allowed long enough' })
+        .expect(403);
+      expect(response.body.success).toBe(false);
+      const unchanged = await Post.findById(postByTestUser._id);
+      expect(unchanged.title).toBe('Post by Test User');
+    });
+
     it('should update a post', async () => {
       if (!testPostId) {
         const post = await Post.create({
@@ -145,7 +175,7 @@ describe('Posts API Integration Tests', () => {
 
       const response = await request(app)
         .put(`/api/posts/${testPostId}`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-auth-token', authToken)
         .send(updatedData)
         .expect(200);
 
@@ -155,6 +185,28 @@ describe('Posts API Integration Tests', () => {
   });
 
   describe('DELETE /api/posts/:id', () => {
+    it('should return 403 when non-owner tries to delete', async () => {
+      const otherUser = await User.create({
+        name: 'Other User',
+        email: 'other2@example.com',
+        password: 'hashed',
+        firebase_uid: 'other-firebase-uid-789',
+      });
+      const postByTestUser = await Post.create({
+        title: 'Post Only Owner Can Delete',
+        content: 'Content for delete auth test.',
+        author: testUser._id,
+      });
+      const response = await request(app)
+        .delete(`/api/posts/${postByTestUser._id}`)
+        .set('x-auth-token', authToken)
+        .set('x-test-uid', otherUser.firebase_uid)
+        .expect(403);
+      expect(response.body.success).toBe(false);
+      const stillExists = await Post.findById(postByTestUser._id);
+      expect(stillExists).not.toBeNull();
+    });
+
     it('should delete a post', async () => {
       const post = await Post.create({
         title: 'Post to Delete',
@@ -164,7 +216,7 @@ describe('Posts API Integration Tests', () => {
 
       const response = await request(app)
         .delete(`/api/posts/${post._id}`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-auth-token', authToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);

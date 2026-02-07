@@ -70,38 +70,38 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: 'StoryHub API Documentation',
 }));
 
-// Health check endpoint
+// Health check endpoint (includes DB and Redis status)
 /**
  * @swagger
  * /health:
  *   get:
  *     summary: Health check endpoint
- *     description: Returns server status and timestamp
+ *     description: Returns server status, timestamp, and DB/Redis connectivity
  *     tags: [Health]
  *     responses:
  *       200:
  *         description: Server is running
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Server is running
- *                 timestamp:
- *                   type: string
- *                   format: date-time
  */
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  const mongoose = require('mongoose');
+  const redisClient = require('./config/redis');
+  const dbStatus = process.env.NODE_ENV === 'test'
+    ? 'skipped'
+    : (mongoose.connection.readyState === 1 ? 'ok' : 'down');
+  const redisStatus = (redisClient.isOpen || redisClient.isReady) ? 'ok' : 'down';
   res.status(200).json({
     success: true,
     message: 'Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    db: dbStatus,
+    redis: redisStatus,
   });
+});
+
+// Simple metrics endpoint (request count, cache hits/misses, uptime)
+app.get('/metrics', (req, res) => {
+  const { getMetrics } = require('./utils/metrics');
+  res.status(200).json(getMetrics());
 });
 
 // API Routes

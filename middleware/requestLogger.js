@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const logger = require('../utils/logger');
+const { incrementRequests } = require('../utils/metrics');
 
 /**
  * Request Logger Middleware
@@ -19,6 +20,7 @@ const logger = require('../utils/logger');
  */
 
 const requestLogger = (req, res, next) => {
+  incrementRequests();
   const requestId = crypto.randomUUID();
   req.requestId = requestId;
 

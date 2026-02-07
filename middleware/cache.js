@@ -34,6 +34,7 @@
 
 const redisClient = require('../config/redis');
 const logger = require('../utils/logger');
+const { incrementCacheHit, incrementCacheMiss } = require('../utils/metrics');
 
 /**
  * Cache Middleware Factory
@@ -77,7 +78,7 @@ const cache = (duration = 300, keyGenerator = null) => {
       const cachedData = await redisClient.get(cacheKey);
 
       if (cachedData) {
-        // ✅ CACHE HIT - Data found in Redis!
+        incrementCacheHit();
         logger.info(`Cache HIT: ${cacheKey}`);
         
         // Parse JSON (Redis stores strings)
@@ -87,7 +88,7 @@ const cache = (duration = 300, keyGenerator = null) => {
         return res.json(data);
       }
 
-      // ❌ CACHE MISS - Data not in Redis
+      incrementCacheMiss();
       logger.info(`Cache MISS: ${cacheKey}`);
 
       // Store original res.json function

@@ -83,19 +83,40 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
  *         description: Server is running
  */
 app.get('/health', async (req, res) => {
-  const mongoose = require('mongoose');
-  const redisClient = require('./config/redis');
-  const dbStatus = process.env.NODE_ENV === 'test'
-    ? 'skipped'
-    : (mongoose.connection.readyState === 1 ? 'ok' : 'down');
-  const redisStatus = (redisClient.isOpen || redisClient.isReady) ? 'ok' : 'down';
-  res.status(200).json({
-    success: true,
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    db: dbStatus,
-    redis: redisStatus,
-  });
+  try {
+    const mongoose = require('mongoose');
+    const dbStatus = process.env.NODE_ENV === 'test'
+      ? 'skipped'
+      : (mongoose.connection.readyState === 1 ? 'ok' : 'down');
+    
+    let redisStatus = 'unknown';
+    try {
+      const redisClient = require('./config/redis');
+      if (redisClient && (redisClient.isOpen || redisClient.isReady)) {
+        redisStatus = 'ok';
+      } else {
+        redisStatus = 'down';
+      }
+    } catch (redisErr) {
+      redisStatus = 'unavailable';
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Server is running',
+      timestamp: new Date().toISOString(),
+      db: dbStatus,
+      redis: redisStatus,
+    });
+  } catch (err) {
+    res.status(200).json({
+      success: true,
+      message: 'Server is running',
+      timestamp: new Date().toISOString(),
+      db: 'unknown',
+      redis: 'unknown',
+    });
+  }
 });
 
 // Simple metrics endpoint (request count, cache hits/misses, uptime)

@@ -23,7 +23,16 @@ jest.mock('../../middleware/verifyTokenMiddleware', () => (req, res, next) => {
 
 jest.mock('../../middleware/ensureBackendUser', () => async (req, res, next) => {
   const User = require('../../models/User');
-  const u = await User.findOne({ firebase_uid: req.uid });
+  let u = await User.findOne({ firebase_uid: req.uid });
+  if (!u && req.uid) {
+    // create a lightweight test user if not found
+    u = await User.create({
+      name: 'Auto Test User',
+      email: `${req.uid}@example.test`,
+      password: 'hashed',
+      firebase_uid: req.uid,
+    });
+  }
   if (u) req.user = u;
   next();
 });

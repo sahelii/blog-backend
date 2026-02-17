@@ -47,7 +47,8 @@ describe('Posts API Integration Tests', () => {
   let testUser;
   let testPostId;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
+    // Ensure a test user exists for each test (tests clear DB between tests)
     testUser = await User.create({
       name: 'Test User',
       email: 'test@example.com',
@@ -121,9 +122,10 @@ describe('Posts API Integration Tests', () => {
 
   describe('GET /api/posts/:id', () => {
     it('should get a single post by ID', async () => {
-      if (!testPostId) {
-        // Create a post first if testPostId is not set
-        const post = await Post.create({
+      // Ensure the post exists (previous tests may have cleared DB)
+      let post = testPostId ? await Post.findById(testPostId) : null;
+      if (!post) {
+        post = await Post.create({
           title: 'Test Post',
           content: 'Test content for single post retrieval',
           author: testUser._id,
@@ -174,13 +176,19 @@ describe('Posts API Integration Tests', () => {
     });
 
     it('should update a post', async () => {
-      if (!testPostId) {
-        const post = await Post.create({
+      // Ensure target post exists and is owned by testUser
+      let post = testPostId ? await Post.findById(testPostId) : null;
+      if (!post) {
+        post = await Post.create({
           title: 'Test Post',
           content: 'Original content',
           author: testUser._id,
         });
         testPostId = post._id;
+      } else {
+        // ensure ownership
+        post.author = testUser._id;
+        await post.save();
       }
 
       const updatedData = {

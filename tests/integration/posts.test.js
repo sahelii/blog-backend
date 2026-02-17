@@ -11,7 +11,13 @@
  */
 
 jest.mock('../../middleware/verifyTokenMiddleware', () => (req, res, next) => {
-  req.uid = req.header('x-test-uid') || 'test-firebase-uid-123';
+  // Emulate real behavior: reject when no auth token provided.
+  const token = req.header('x-auth-token');
+  const testUid = req.header('x-test-uid');
+  if (!token && !testUid) {
+    return res.status(401).json({ success: false, error: 'No token, authorization denied' });
+  }
+  req.uid = testUid || 'test-firebase-uid-123';
   next();
 });
 

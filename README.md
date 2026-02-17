@@ -11,6 +11,11 @@ Node.js + Express API for the blog platform: posts, comments, auth (Firebase), R
 - **Cache:** Redis (optional; app works without it)
 - **Docs:** Swagger at `/api-docs`
 
+## Security (never commit)
+
+- **Do not commit:** `.env`, `.env.local`, `.env.vault`, `.env.keys`, or any file containing real API keys, secrets, or passwords. These are in `.gitignore`; keep them that way.
+- Use `.env.example` as a template only; never fill it with real values and commit.
+
 ## Setup
 
 1. **Env**
@@ -52,5 +57,7 @@ So: *Every push runs tests and lint; no manual-only testing.*
 
 - **Live API:** https://blog-backend-2-5hun.onrender.com  
 - **Frontend:** https://blog-frontend-sigma-ecru.vercel.app  
+
+**Deployment checklist (Render):** Set env vars in dashboard: `MONGO_URI`/`MONGODB_URI`, Firebase Admin vars, and `CORS_ALLOWED_ORIGINS` or `FRONTEND_URL` to your frontend origin. Never put secrets in code or in the repo.
 
 See `docs/IMPLEMENTATION_AUDIT.md` for a full checklist of what’s implemented.

@@ -22,15 +22,22 @@ if (!admin.apps.length) {
         })
       });
     } else {
-      // Fallback: try to use service account file (for backward compatibility)
+      // Fallback: attempt to load a service account JSON from a secure path
+      // provided via the FIREBASE_SERVICE_ACCOUNT_PATH env var.
       try {
-        const serviceAccount = require('../blog-app-150fc-firebase-adminsdk-q4n0z-3fff830f3f.json');
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount)
-        });
+        const saPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+        if (saPath) {
+          const serviceAccount = require(saPath);
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+          });
+        } else {
+          logger.warn('No FIREBASE_SERVICE_ACCOUNT_PATH set. Using environment variables.');
+        }
       } catch (fileError) {
-        logger.warn('Firebase service account file not found. Using environment variables.');
+        logger.warn('Firebase service account file could not be loaded. Using environment variables.');
       }
+    }
     }
   } catch (error) {
     logger.error('Firebase Admin initialization error:', error);

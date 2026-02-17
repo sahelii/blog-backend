@@ -2,10 +2,15 @@
 node_modules/
 package-lock.json
 
-# Environment variables
+# Environment variables and secrets (never commit)
 .env
 .env.local
 .env.production
+.env.*.local
+.env.vault
+.env.keys
+.env*.vault
+*.pem
 
 # Logs
 logs/

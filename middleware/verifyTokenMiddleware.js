@@ -38,7 +38,6 @@ if (!admin.apps.length) {
         logger.warn('Firebase service account file could not be loaded. Using environment variables.');
       }
     }
-    }
   } catch (error) {
     logger.error('Firebase Admin initialization error:', error);
   }

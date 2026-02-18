@@ -10,8 +10,8 @@ if (!MONGO_URI) {
   console.error('❌ MONGO_URI is not set in .env file');
   console.log('\n📝 Please create a .env file in blog-backend directory with:');
   console.log('MONGO_URI=your_mongodb_connection_string');
-  console.log('\n💡 Your MongoDB URI from Render:');
-  console.log('mongodb+srv://saheli:saheli12345@cluster0.fty5s.mongodb.net/blogDB?retryWrites=true&w=majority&appName=Cluster0');
+  console.log('\n💡 Format: mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority');
+  console.log('⚠️  Get your connection string from MongoDB Atlas → Connect → Connect your application');
   process.exit(1);
 }
 
@@ -114,8 +114,9 @@ mongoose.connect(MONGO_URI, {
       console.log('   - Check network connectivity');
     }
     
-    console.log('\n📝 Your connection string should be:');
-    console.log('MONGO_URI=mongodb+srv://saheli:saheli12345@cluster0.fty5s.mongodb.net/blogDB?retryWrites=true&w=majority&appName=Cluster0\n');
+    console.log('\n📝 Your connection string format should be:');
+    console.log('MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority\n');
+    console.log('⚠️  Never commit real credentials to Git! Use environment variables only.\n');
     
     process.exit(1);
   });

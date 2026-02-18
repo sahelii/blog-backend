@@ -45,8 +45,16 @@ if (!admin.apps.length) {
 
 const verifyToken = async (req, res, next) => {
   try {
+    // If Firebase Admin was never initialized (e.g. missing env vars on Render), return 503
+    if (!admin.apps.length) {
+      logger.error('Firebase Admin not initialized. Set FIREBASE_* env vars on Render.');
+      return res.status(503).json({
+        success: false,
+        error: 'Server configuration error: authentication not configured. Set Firebase Admin env vars on your host (see backend DEPLOYMENT.md).'
+      });
+    }
+
     const token = req.header('x-auth-token');
-    
     if (!token) {
       return res.status(401).json({
         success: false,

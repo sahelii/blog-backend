@@ -28,6 +28,11 @@ const { swaggerSpec, swaggerUi } = require('./swagger/swagger');
 // Initialize Express app
 const app = express();
 
+// Trust proxy when behind Render/nginx (needed for rate-limit to use X-Forwarded-For)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Connect Database (only if not in test environment)
 if (process.env.NODE_ENV !== 'test') {
   connectDB();

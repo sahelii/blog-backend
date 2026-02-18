@@ -66,6 +66,7 @@ const {
 router.post(
   '/:id/comment',
   tokenVerifyMiddleware,
+  ensureBackendUser,
   validateComment,
   createComment
 );
